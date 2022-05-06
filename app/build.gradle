@@ -1,0 +1,121 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    compileSdk 32
+
+    defaultConfig {
+        applicationId "com.adrian.bucayan.scanmecalculator"
+        minSdk 21
+        targetSdk 32
+        versionCode 1
+        versionName "1.00.00"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('../dummy-keystore-file-only.keystore.jks')
+            storePassword "P@ssw0rd!"
+            keyAlias 'scanme'
+            keyPassword "P@ssw0rd!"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+
+    // Default flavor dimension value if no set specific dimensions for each flavor
+    flavorDimensions "version"
+
+    productFlavors {
+        "red-filesystem" {
+            dimension "version"
+            applicationIdSuffix ".redFilesystem"
+            versionCode 1
+            versionName "1.00.00"
+            buildConfigField "String", "THEME", "\"red\""
+            buildConfigField "String", "INPUT", "\"file\""
+        }
+        "red-built-in-camera" {
+            dimension "version"
+            applicationIdSuffix ".redCamera"
+            versionCode 1
+            versionName "1.00.00"
+            buildConfigField "String", "THEME", "\"red\""
+            buildConfigField "String", "INPUT", "\"camera\""
+        }
+        "green-filesystem" {
+            dimension "version"
+            applicationIdSuffix ".greenFilesystem"
+            versionCode 1
+            versionName "1.00.00"
+            buildConfigField "String", "THEME", "\"green\""
+            buildConfigField "String", "INPUT", "\"file\""
+        }
+        "green-built-in-camera" {
+            dimension "version"
+            applicationIdSuffix ".greenCamera"
+            versionCode 1
+            versionName "1.00.00"
+            buildConfigField "String", "THEME", "\"green\""
+            buildConfigField "String", "INPUT", "\"camera\""
+        }
+        sourceSets."red-filesystem"{ 
+            res.srcDirs = ['res', 'src/red/res']
+        }
+        sourceSets."red-built-in-camera"{
+            res.srcDirs = ['res', 'src/red/res']
+        }
+        sourceSets."green-filesystem"{
+            res.srcDirs = ['res', 'src/green/res']
+        }
+        sourceSets."green-built-in-camera"{
+            res.srcDirs = ['res', 'src/green/res']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+android.applicationVariants.all { variant ->
+    variant.outputs.all { output ->
+        def baseName = "app"
+        def productFlavor = variant.productFlavors[0].name
+        def builtType = variant.buildType.name
+        def versionName = variant.versionName
+        def versionCode = variant.versionCode
+        outputFileName = "${baseName}-${productFlavor}.apk"
+    }
+}
+
+dependencies {
+
+    implementation 'androidx.core:core-ktx:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'com.google.android.material:material:1.5.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+}

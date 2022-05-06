@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "com.adrian.bucayan.scanmecalculator.greenCamera",
+  "variantName": "green-built-in-cameraRelease",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "attributes": [],
+      "versionCode": 1,
+      "versionName": "1.00.00-full",
+      "outputFile": "app-green-built-in-camera.apk"
+    }
+  ],
+  "elementType": "File"
+}
