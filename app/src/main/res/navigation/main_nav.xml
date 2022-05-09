@@ -22,5 +22,10 @@
         android:id="@+id/camera_fragment"
         android:name="com.adrian.bucayan.scanmecalculator.presentation.CameraFragment"
         android:label="fragment_camera"
-        tools:layout="@layout/fragment_camera" />
+        tools:layout="@layout/fragment_camera" >
+        <action
+            android:id="@+id/action_camera_fragment_to_main_fragment"
+            app:destination="@id/main_fragment" />
+    </fragment>
+
 </navigation>

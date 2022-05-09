@@ -1,25 +1,30 @@
 package com.adrian.bucayan.scanmecalculator.presentation
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.setFragmentResultListener
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.Navigation
+import androidx.navigation.fragment.findNavController
 import com.adrian.bucayan.scanmecalculator.BuildConfig
-import com.adrian.bucayan.scanmecalculator.R
 import com.adrian.bucayan.scanmecalculator.databinding.FragmentMainBinding
+import com.adrian.bucayan.scanmecalculator.presentation.util.Constants
 import com.adrian.bucayan.scanmecalculator.presentation.util.PermissionUtility
+import com.google.android.gms.vision.Frame
+import com.google.android.gms.vision.text.TextRecognizer
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import timber.log.Timber
-
 
 @ExperimentalCoroutinesApi
 @AndroidEntryPoint
@@ -28,7 +33,9 @@ class MainFragment : Fragment() {
     private var _binding: FragmentMainBinding? = null
     private val binding get() = _binding!!
 
-    val PHOTO_PICKER_REQUEST_CODE = 20
+    private val PHOTO_PICKER_REQUEST_CODE = 20
+    private val CAMERA_PICKER_REQUEST_CODE = 30
+    var image_uri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +53,21 @@ class MainFragment : Fragment() {
         binding.BtnInput.setOnClickListener {
             requestPermission()
         }
+
+        setFragmentResultListener(Constants.CAMERA_URI) {
+                requestKey, bundle ->
+            Timber.e("requestKey === %s", requestKey)
+            Timber.e("bundle === %s", bundle.getString(Constants.BUNDLE_URI))
+
+            val uriData : Uri = Uri.parse(bundle.getString(Constants.BUNDLE_URI))
+            runTextRecognition(uriData)
+        }
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Timber.d("onResume")
     }
 
     private fun requestPermission() {
@@ -97,10 +119,13 @@ class MainFragment : Fragment() {
     }
 
     private fun navigateToCamera() {
-        lifecycleScope.launchWhenStarted {
-            Navigation.findNavController(requireActivity(), R.id.fragment_container).navigate(
-                MainFragmentDirections.actionPermissionsToCamera())
+        Timber.d("navigateToCamera")
+         lifecycleScope.launchWhenStarted {
+            findNavController().apply {
+                this.navigate(MainFragmentDirections.actionPermissionsToCamera())
+            }
         }
+
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -109,13 +134,72 @@ class MainFragment : Fragment() {
             PHOTO_PICKER_REQUEST_CODE -> {
                 //data.getData returns the content URI for the selected Image
                 val selectedImage: Uri? = data?.data
-                Timber.d("selectedImage = %s", selectedImage)
+                Timber.e("selectedImage = %s", selectedImage)
+                clearInputAndResult()
+                runTextRecognition(selectedImage)
+            }
+            CAMERA_PICKER_REQUEST_CODE -> {
+                clearInputAndResult()
+                runTextRecognition(image_uri)
             }
         }
+    }
+
+    private fun clearInputAndResult() {
+        binding.TvInput.text = "input : "
+        binding.TvResult.text = "result :"
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun runTextRecognition(selectedImage: Uri?) {
+        val recognizer = TextRecognizer.Builder(requireActivity().applicationContext).build()
+        val bitmap: Bitmap = MediaStore.Images.Media.getBitmap(requireActivity().contentResolver, selectedImage)
+        if (!recognizer.isOperational) {
+            Toast.makeText(requireActivity(), "Error", Toast.LENGTH_SHORT).show()
+        } else {
+            val frame = Frame.Builder().setBitmap(bitmap).build()
+            val items = recognizer.detect(frame)
+            val sb = StringBuilder()
+            for (i in 0 until items.size()) {
+                val myItem = items.valueAt(i)
+                sb.append(myItem.value)
+            }
+            binding.TvInput.text = "input : " + sb.toString()
+            computeForResult(sb.toString())
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun computeForResult(text: String) {
+        var splitStrings = text.split(" ")
+
+        if(splitStrings.size > 2) {
+            var result: Int = 0
+            val left = splitStrings[0]
+            val op = splitStrings[1]
+            val right = splitStrings[2]
+            when(op) {
+                "+" -> {
+                    result = left.toInt() + right.toInt()
+                }
+                "-" -> {
+                    result = left.toInt()  - right.toInt()
+                }
+                "/" -> {
+                    result = left.toInt()  / right.toInt()
+                }
+                "*" -> {
+                    result = left.toInt()  * right.toInt()
+                }
+            }
+            binding.TvResult.text = "result = $result"
+        }
+
     }
 
     override fun onDestroy() {
         super.onDestroy()
         _binding = null
     }
+
 }

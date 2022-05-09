@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+
     }
 
     override fun onBackPressed() {
