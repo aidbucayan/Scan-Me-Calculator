@@ -20,6 +20,9 @@ import com.adrian.bucayan.scanmecalculator.BuildConfig
 import com.adrian.bucayan.scanmecalculator.databinding.FragmentMainBinding
 import com.adrian.bucayan.scanmecalculator.presentation.util.Constants
 import com.adrian.bucayan.scanmecalculator.presentation.util.PermissionUtility
+import com.adrian.bucayan.scanmecalculator.presentation.util.cropper.CropImageContract
+import com.adrian.bucayan.scanmecalculator.presentation.util.cropper.CropImageView
+import com.adrian.bucayan.scanmecalculator.presentation.util.cropper.options
 import com.google.android.gms.vision.Frame
 import com.google.android.gms.vision.text.TextRecognizer
 import dagger.hilt.android.AndroidEntryPoint
@@ -60,7 +63,9 @@ class MainFragment : Fragment() {
             Timber.e("bundle === %s", bundle.getString(Constants.BUNDLE_URI))
 
             val uriData : Uri = Uri.parse(bundle.getString(Constants.BUNDLE_URI))
-            runTextRecognition(uriData)
+
+            startCrop(uriData)
+
         }
 
     }
@@ -136,7 +141,10 @@ class MainFragment : Fragment() {
                 val selectedImage: Uri? = data?.data
                 Timber.e("selectedImage = %s", selectedImage)
                 clearInputAndResult()
-                runTextRecognition(selectedImage)
+                if (selectedImage != null) {
+                    startCrop(selectedImage)
+                }
+                //runTextRecognition(selectedImage)
             }
             CAMERA_PICKER_REQUEST_CODE -> {
                 clearInputAndResult()
@@ -149,6 +157,28 @@ class MainFragment : Fragment() {
         binding.TvInput.text = "input : "
         binding.TvResult.text = "result :"
     }
+
+    private val cropImage = registerForActivityResult(CropImageContract()) { result ->
+        if (result.isSuccessful) {
+            // use the returned uri
+            val uriContent = result.uriContent
+            runTextRecognition(uriContent)
+        } else {
+            // an error occurred
+            val exception = result.error
+        }
+    }
+
+    private fun startCrop(uriData: Uri) {
+        // start cropping activity for pre-acquired image saved on the device and customize settings
+        cropImage.launch(
+            options(uri = uriData) {
+                setGuidelines(CropImageView.Guidelines.ON)
+                setOutputCompressFormat(Bitmap.CompressFormat.PNG)
+            }
+        )
+    }
+
 
     @SuppressLint("SetTextI18n")
     private fun runTextRecognition(selectedImage: Uri?) {
@@ -171,25 +201,34 @@ class MainFragment : Fragment() {
 
     @SuppressLint("SetTextI18n")
     private fun computeForResult(text: String) {
+        var newText : String = text
         var splitStrings = text.split(" ")
+        if (splitStrings.size < 2) {
+            newText = newText.replace("+", " + " )
+            newText = newText.replace("-", " - " )
+            newText = newText.replace("/", " / " )
+            newText = newText.replace("*", " * " )
+            newText = newText.replace("x", " * " ) //if x
+        }
 
+        splitStrings = newText.split(" ") // split again
         if(splitStrings.size > 2) {
             var result: Int = 0
-            val left = splitStrings[0]
+            val left = splitStrings[0].toInt()
             val op = splitStrings[1]
-            val right = splitStrings[2]
+            val right = splitStrings[2].toInt()
             when(op) {
                 "+" -> {
-                    result = left.toInt() + right.toInt()
+                    result = left + right
                 }
                 "-" -> {
-                    result = left.toInt()  - right.toInt()
+                    result = left - right
                 }
                 "/" -> {
-                    result = left.toInt()  / right.toInt()
+                    result = left  / right
                 }
                 "*" -> {
-                    result = left.toInt()  * right.toInt()
+                    result = left  * right
                 }
             }
             binding.TvResult.text = "result = $result"

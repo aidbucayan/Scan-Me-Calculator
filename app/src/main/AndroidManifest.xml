@@ -58,6 +58,7 @@
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="ocr" />
 
+        <activity android:name="com.adrian.bucayan.scanmecalculator.presentation.util.cropper.CropImageActivity"/>
 
     </application>
 
